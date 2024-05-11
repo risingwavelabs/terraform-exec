@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-exec/internal/version"
 )
@@ -187,6 +188,29 @@ func (tf *Terraform) buildTerraformCmd(ctx context.Context, mergeEnv map[string]
 
 	cmd.Env = tf.buildEnv(mergeEnv)
 	cmd.Dir = tf.workingDir
+
+	tf.logger.Printf("[INFO] running Terraform command: %s", cmd.String())
+
+	return cmd
+}
+
+func (tf *Terraform) buildTerraformCmdWithGracefulShutdown(ctx context.Context, gracefulShutdownPeriod time.Duration, mergeEnv map[string]string, args ...string) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, tf.execPath, args...)
+
+	cmd.Env = tf.buildEnv(mergeEnv)
+	cmd.Dir = tf.workingDir
+
+	if gracefulShutdownPeriod > 0 {
+		cmd.WaitDelay = gracefulShutdownPeriod
+		cmd.Cancel = func() error {
+			// os.Interrupt doesn't work on Windows so it will result into an immediate kill.
+			err := cmd.Process.Signal(os.Interrupt)
+			if err != nil && !errors.Is(err, os.ErrProcessDone) {
+				err = cmd.Process.Kill()
+			}
+			return err
+		}
+	}
 
 	tf.logger.Printf("[INFO] running Terraform command: %s", cmd.String())
 
