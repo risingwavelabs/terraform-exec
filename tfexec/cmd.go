@@ -353,6 +353,7 @@ func (tf *Terraform) runTerraformCmd(ctx context.Context, cmd *exec.Cmd) error {
 		// When custom cancellation is enabled, avoid piping cancellation to prevent
 		// cancellation from being interrupted due to broken pipe.
 		if cmd.Cancel != nil {
+			fmt.Println("heheho")
 			errStdoutCtx = context.WithoutCancel(ctx)
 		}
 		errStdout = writeOutput(errStdoutCtx, stdoutPipe, stdoutWriter)
@@ -365,6 +366,7 @@ func (tf *Terraform) runTerraformCmd(ctx context.Context, cmd *exec.Cmd) error {
 		// When custome cancellation is enabled, avoid piping cancellation to prevent
 		// cancellation from being interrupted due to broken pipe.
 		if cmd.Cancel != nil {
+			fmt.Println("heheho")
 			errStderrCtx = context.WithoutCancel(ctx)
 		}
 		errStderr = writeOutput(errStderrCtx, stderrPipe, stderrWriter)
