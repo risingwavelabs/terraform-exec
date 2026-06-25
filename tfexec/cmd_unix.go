@@ -1,8 +1,8 @@
 // Copyright IBM Corp. 2020, 2026
 // SPDX-License-Identifier: MPL-2.0
 
-//go:build !unix && !linux
-// +build !unix,!linux
+//go:build unix && !linux
+// +build unix,!linux
 
 package tfexec
 
@@ -12,10 +12,25 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"syscall"
 )
 
 func (tf *Terraform) runTerraformCmd(ctx context.Context, cmd *exec.Cmd) error {
 	var errBuf strings.Builder
+
+	// Run Terraform in its own process group so that a terminal-delivered
+	// signal (e.g. SIGINT from Ctrl-C) reaches only the parent process. The
+	// parent translates context cancellation into a single graceful interrupt
+	// via cmd.Cancel; without a dedicated process group Terraform would also
+	// receive the terminal signal directly, resulting in a double interrupt
+	// that aborts immediately instead of shutting down gracefully.
+	//
+	// Pdeathsig is intentionally omitted: it is a Linux-only feature and is not
+	// available in syscall.SysProcAttr on other unix platforms (e.g. darwin).
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		// set process group ID
+		Setpgid: true,
+	}
 
 	// check for early cancellation
 	select {
