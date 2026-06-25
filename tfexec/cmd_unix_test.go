@@ -1,8 +1,8 @@
 // Copyright IBM Corp. 2020, 2026
 // SPDX-License-Identifier: MPL-2.0
 
-//go:build !unix && !linux
-// +build !unix,!linux
+//go:build unix && !linux
+// +build unix,!linux
 
 package tfexec
 
@@ -15,9 +15,9 @@ import (
 	"time"
 )
 
-func Test_runTerraformCmd_default(t *testing.T) {
+func Test_runTerraformCmd_unix(t *testing.T) {
 	// Checks runTerraformCmd for race condition when using
-	// go test -race -run Test_runTerraformCmd_default ./tfexec
+	// go test -race -run Test_runTerraformCmd_unix ./tfexec
 	var buf bytes.Buffer
 
 	tf := &Terraform{
